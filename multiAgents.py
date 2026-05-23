@@ -272,13 +272,11 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         """
 
         def expectimax(state, agentIndex, depth):
-            # Terminal condition: Win/Lose state or reached the required depth
             if state.isWin() or state.isLose() or depth == self.depth:
                 return self.evaluationFunction(state)
 
             numAgents = state.getNumAgents()
 
-            # Pacman's turn (Max Node: Find the maximum value)
             if agentIndex == 0:
                 bestVal = float('-inf')
                 for action in state.getLegalActions(agentIndex):
@@ -286,11 +284,9 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                     bestVal = max(bestVal, expectimax(successor, 1, depth))
                 return bestVal
 
-            # Ghosts' turn (Chance Node: Calculate the expected average value)
             else:
                 nextAgent = agentIndex + 1
                 nextDepth = depth
-                # If all ghosts have moved, return to Pacman's turn and increase depth
                 if nextAgent == numAgents:
                     nextAgent = 0
                     nextDepth = depth + 1
@@ -298,16 +294,13 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 expectedVal = 0.0
                 legalActions = state.getLegalActions(agentIndex)
 
-                # Assume ghosts choose random legal moves with a uniform distribution
                 probability = 1.0 / len(legalActions)
 
                 for action in legalActions:
                     successor = state.generateSuccessor(agentIndex, action)
-                    # Accumulate expected value: P(action) * Value(successor)
                     expectedVal += probability * expectimax(successor, nextAgent, nextDepth)
                 return expectedVal
 
-        # Root level initialization logic for Pacman (agent 0) to make the final decision
         bestAction = None
         bestScore = float('-inf')
         for action in gameState.getLegalActions(0):
@@ -337,16 +330,13 @@ def betterEvaluationFunction(currentGameState: GameState):
     ghostStates = currentGameState.getGhostStates()
     capsules = currentGameState.getCapsules()
 
-    # Base score
     score = currentGameState.getScore()
 
     # 1. ACTIVE FOOD HUNTING
     if foodList:
         minFoodDist = min([util.manhattanDistance(pos, food) for food in foodList])
-        # Multiplied by 10.0 to create a much stronger pull towards food
         score += 10.0 / float(minFoodDist)
 
-        # Heavily penalize remaining items to force Pacman to clear the board quickly
     score -= 20 * len(foodList)
     score -= 50 * len(capsules)
 
@@ -354,22 +344,17 @@ def betterEvaluationFunction(currentGameState: GameState):
     for ghost in ghostStates:
         dist = util.manhattanDistance(pos, ghost.getPosition())
         if ghost.scaredTimer > 0:
-            # Ghost is scared: BECOME THE HUNTER. High reward for chasing it.
             score += 200.0 / (dist + 1.0)
         else:
-            # Ghost is active: AVOID AT ALL COSTS.
             if dist <= 1:
                 score -= 1000.0
             elif dist <= 2:
-                # Added a buffer zone so Pacman runs away earlier instead of waiting
                 score -= 500.0
 
     # 3. PENALIZE STOPPING
-    # If the direction taken to reach this state was STOP, apply a massive penalty.
     if currentGameState.getPacmanState().getDirection() == Directions.STOP:
         score -= 100.0
 
     return score
 
-# Abbreviation
 better = betterEvaluationFunction
